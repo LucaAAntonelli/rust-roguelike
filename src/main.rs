@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use quicksilver::{
-    geom::{Rectangle, Vector},
-    graphics::{Color, Image},
-    input::Key,
-    run, Result, Settings, Window,
+    geom::{Shape, Vector},
+    graphics::{Background::Img, Color, Font, FontStyle, Image},
+    lifecycle::{run, Asset, Settings, State, Window},
+    prelude::{
+        Background::{Blended, Col},
+        Key, Rectangle,
+    },
+    Future, Result,
 };
-
-use quicksilver::elefont::*;
 
 struct Game {
     title: Asset<Image>,
@@ -155,17 +157,18 @@ impl State for Game {
     }
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
+        use quicksilver::input::ButtonState::*;
         let player = &mut self.entities[self.player_id];
-        if window.keyboard()[Key::Left].is_down() {
+        if window.keyboard()[Key::Left] == Pressed {
             player.pos.x -= 1.0;
         }
-        if window.keyboard()[Key::Right].is_down() {
+        if window.keyboard()[Key::Right] == Pressed {
             player.pos.x += 1.0;
         }
-        if window.keyboard()[Key::Up].is_down() {
+        if window.keyboard()[Key::Up] == Pressed {
             player.pos.y -= 1.0;
         }
-        if window.keyboard()[Key::Down].is_down() {
+        if window.keyboard()[Key::Down] == Pressed {
             player.pos.y += 1.0;
         }
         if window.keyboard()[Key::Escape].is_down() {
@@ -263,5 +266,5 @@ fn main() {
         scale: quicksilver::graphics::ImageScaleStrategy::Blur,
         ..Default::default()
     };
-    run::<Game>(settings, Vector::new(800, 600));
+    run::<Game>("Quicksilver Roguelike", Vector::new(800, 600), settings);
 }
