@@ -174,14 +174,14 @@ impl State for Game {
         })?;
 
         let tile_size_px = self.tile_size_px;
-
+        let offset_px = Vector::new(50, 120);
         let (tileset, map) = (&mut self.tileset, &self.map);
         tileset.execute(|tileset| {
             for tile in map.iter() {
                 if let Some(image) = tileset.get(&tile.glyph) {
                     let pos_px = tile.pos.times(tile_size_px);
                     window.draw(
-                        &Rectangle::new(pos_px, image.area().size()),
+                        &Rectangle::new(pos_px + offset_px, image.area().size()),
                         Blended(&image, tile.color),
                     );
                 }
