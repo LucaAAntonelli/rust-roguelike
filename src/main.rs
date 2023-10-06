@@ -1,19 +1,18 @@
 use std::collections::HashMap;
 
 use quicksilver::{
-    geom::Vector,
-    lifecycle::{run, Settings, State, Window},
-    prelude::{
-        Asset,
-        Background::{Blended, Img},
-        Color, Font, FontStyle, Image, Rectangle, Shape,
-    },
-    Future, Result,
+    geom::{Rectangle, Vector},
+    graphics::{Color, Image},
+    input::Key,
+    run, Result, Settings, Window,
 };
+
+use quicksilver::elefont::*;
 
 struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
+    square_font_info: Asset<Image>,
     map_size: Vector,
     map: Vec<Tile>,
     entities: Vec<Entity>,
@@ -94,6 +93,7 @@ fn generate_entities() -> Vec<Entity> {
 impl State for Game {
     fn new() -> Result<Self> {
         let font_mononoki = "mononoki-Regular.ttf";
+        let font_square = "square.ttf";
 
         let title = Asset::new(Font::load(font_mononoki).and_then(|font| {
             font.render("Quicksilver Roguelike", &FontStyle::new(72.0, Color::BLACK))
@@ -102,6 +102,13 @@ impl State for Game {
         let mononoki_font_info = Asset::new(Font::load(font_mononoki).and_then(|font| {
             font.render(
                 "Mononoki font by Matthias Tellen, terms: SIL Open Font License 1.1",
+                &FontStyle::new(20.0, Color::BLACK),
+            )
+        }));
+
+        let square_font_info = Asset::new(Font::load(font_square).and_then(|font| {
+            font.render(
+                "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
                 &FontStyle::new(20.0, Color::BLACK),
             )
         }));
@@ -120,8 +127,8 @@ impl State for Game {
         });
 
         let game_glyphs = "#@g.%";
-        let tile_size_px = Vector::new(12, 24);
-        let tileset = Asset::new(Font::load(font_mononoki).and_then(move |text| {
+        let tile_size_px = Vector::new(24, 24);
+        let tileset = Asset::new(Font::load(font_square).and_then(move |text| {
             let tiles = text
                 .render(game_glyphs, &FontStyle::new(tile_size_px.y, Color::WHITE))
                 .expect("Could not render the font tileset.");
@@ -137,6 +144,7 @@ impl State for Game {
         Ok(Self {
             title,
             mononoki_font_info,
+            square_font_info,
             map_size,
             map,
             entities,
@@ -147,6 +155,22 @@ impl State for Game {
     }
 
     fn update(&mut self, window: &mut Window) -> Result<()> {
+        let player = &mut self.entities[self.player_id];
+        if window.keyboard()[Key::Left].is_down() {
+            player.pos.x -= 1.0;
+        }
+        if window.keyboard()[Key::Right].is_down() {
+            player.pos.x += 1.0;
+        }
+        if window.keyboard()[Key::Up].is_down() {
+            player.pos.y -= 1.0;
+        }
+        if window.keyboard()[Key::Down].is_down() {
+            player.pos.y += 1.0;
+        }
+        if window.keyboard()[Key::Escape].is_down() {
+            window.close();
+        }
         Ok(())
     }
 
@@ -173,6 +197,16 @@ impl State for Game {
             Ok(())
         })?;
 
+        self.square_font_info.execute(|image| {
+            window.draw(
+                &image
+                    .area()
+                    .translate((2, window.screen_size().y as i32 - 30)),
+                Img(&image),
+            );
+            Ok(())
+        })?;
+
         let tile_size_px = self.tile_size_px;
         let offset_px = Vector::new(50, 120);
         let (tileset, map) = (&mut self.tileset, &self.map);
@@ -189,6 +223,37 @@ impl State for Game {
             Ok(())
         })?;
 
+        let (tileset, entities) = (&mut self.tileset, &self.entities);
+        tileset.execute(|tileset| {
+            for entity in entities.iter() {
+                if let Some(image) = tileset.get(&entity.glyph) {
+                    let pos_px = offset_px + entity.pos.times(tile_size_px);
+                    window.draw(
+                        &Rectangle::new(pos_px, image.area().size()),
+                        Blended(&image, entity.color),
+                    );
+                }
+            }
+            Ok(())
+        })?;
+
+        let player = &self.entities[self.player_id];
+        let full_health_width_px = 100.0;
+        let current_health_width_px =
+            (player.hp as f32 / player.max_hp as f32) * full_health_width_px;
+
+        let map_size_px = self.map_size.times(tile_size_px);
+        let health_bar_pos_px = offset_px + Vector::new(map_size_px.x, 0.0);
+
+        window.draw(
+            &Rectangle::new(health_bar_pos_px, (full_health_width_px, tile_size_px.y)),
+            Col(Color::RED.with_alpha(0.5)),
+        );
+        window.draw(
+            &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
+            Col(Color::RED),
+        );
+
         Ok(())
     }
 }
@@ -198,5 +263,5 @@ fn main() {
         scale: quicksilver::graphics::ImageScaleStrategy::Blur,
         ..Default::default()
     };
-    run::<Game>("Quicksilver Roguelike", Vector::new(800, 600), settings);
+    run::<Game>(settings, Vector::new(800, 600));
 }
