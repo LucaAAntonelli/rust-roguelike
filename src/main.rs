@@ -8,6 +8,7 @@ fn main() {
     run(
         Settings {
             title: "Rust Roguelike",
+            size: Vector::new(800.0, 600.0),
             ..Settings::default()
         },
         app,
@@ -19,7 +20,7 @@ async fn app(window: Window, mut gfx: Graphics, mut input: Input) -> Result<()> 
     let square = VectorFont::load("square.ttf").await?;
     let mut title = mononoki.to_renderer(&gfx, 72.0)?;
     let mut mononoki_font_info = mononoki.to_renderer(&gfx, 20.0)?;
-    let mut square_font_info = square.to_renderer(&gfx, 16.0)?;
+    let mut square_font_info = square.to_renderer(&gfx, 20.0)?;
     gfx.clear(Color::WHITE);
 
     title.draw(
